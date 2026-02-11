@@ -10,7 +10,7 @@ pipeline {
 
         stage('Checkout Code') {
             steps {
-                git 'https://github.com/Tejal9601/Jen_AutoTriggerP.git'
+                git branch: 'main', url:'https://github.com/Tejal9601/Jen_AutoTriggerP.git'
             }
         }
 
