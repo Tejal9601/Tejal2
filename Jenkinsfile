@@ -24,7 +24,7 @@ pipeline {
         stage('Clean Project') {
             steps {
                 bat 'mvn clean'
-            }
+            } 
         }
 
         stage('Run Automation Tests') {
