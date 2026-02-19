@@ -2,62 +2,85 @@ pipeline {
     agent any
 
     tools {
-        jdk 'jdk21'
-        maven 'maven3'
+        maven 'MAVEN3'
+        jdk 'JDK11'
+    }
+
+    triggers {
+        githubPush()
+    }
+
+    options {
+        timestamps()
+        buildDiscarder(logRotator(numToKeepStr: '10'))
+    }
+
+    environment {
+        MAVEN_OPTS = '-Dmaven.test.failure.ignore=false'
     }
 
     stages {
 
         stage('Checkout Code') {
             steps {
-                git branch: 'main', url:'https://github.com/Tejal9601/Jen_AutoTriggerP.git'
+                echo 'Checking out code from GitHub...'
+                checkout scm
             }
         }
 
-        stage('Verify Tools') {
+        stage('Build') {
             steps {
-                bat 'java -version'
-                bat 'mvn -version'
+                echo 'Building the project...'
+                sh 'mvn clean compile'
             }
         }
 
-        stage('Clean Project') {
+        stage('Run Tests') {
             steps {
-                bat 'mvn clean'
-            } 
+                echo 'Running test cases...'
+                sh 'mvn test'
+            }
         }
 
-        stage('Run Automation Tests') {
+        stage('Publish Test Report') {
             steps {
-                bat 'mvn test'
+                echo 'Publishing JUnit test reports...'
+                junit 'target/surefire-reports/*.xml'
+            }
+        }
+
+        stage('Generate HTML Report') {
+            steps {
+                echo 'Generating HTML report...'
+                publishHTML(target: [
+                    reportDir: 'target/site',
+                    reportFiles: 'index.html',
+                    reportName: 'Maven HTML Report',
+                    keepAll: true,
+                    alwaysLinkToLastBuild: true,
+                    allowMissing: true
+                ])
+            }
+        }
+
+        stage('Archive Artifacts') {
+            steps {
+                echo 'Archiving build artifacts...'
+                archiveArtifacts artifacts: '**/target/*.jar', fingerprint: true
             }
         }
     }
 
     post {
-
-        always {
-
-            // Publish JUnit XML Results
-            junit '**/target/surefire-reports/*.xml'
-
-            // Publish HTML Report
-            publishHTML([
-                allowMissing: false,
-                alwaysLinkToLastBuild: true,
-                keepAll: true,
-                reportDir: 'target/surefire-reports',
-                reportFiles: 'index.html',
-                reportName: 'Automation HTML Report'
-            ])
-        }
-
         success {
-            echo '✅ Automation Tests Passed Successfully!'
+            echo ' Build completed successfully'
         }
-
         failure {
-            echo '❌ Automation Tests Failed!'
+            echo ' Build failed'
+        }
+        always {
+            echo ' Cleaning workspace'
+            cleanWs()
         }
     }
 }
