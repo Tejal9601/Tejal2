@@ -6,10 +6,6 @@ pipeline {
         maven 'maven3'
     }
 
-    triggers {
-        githubPush()
-    }
-
     options {
         timestamps()
         buildDiscarder(logRotator(numToKeepStr: '10'))
@@ -23,7 +19,7 @@ pipeline {
 
         stage('Checkout Code') {
             steps {
-                echo 'Checking out code from GitHub...'
+                echo 'Checking out source code...'
                 checkout scm
             }
         }
@@ -31,42 +27,22 @@ pipeline {
         stage('Build') {
             steps {
                 echo 'Building the project...'
-                sh 'mvn clean compile'
+                bat 'mvn clean compile'
             }
         }
 
         stage('Run Tests') {
             steps {
                 echo 'Running test cases...'
-                sh 'mvn test'
+                bat 'mvn test'
             }
         }
 
         stage('Publish Test Report') {
             steps {
-                echo 'Publishing JUnit test reports...'
-                junit 'target/surefire-reports/*.xml'
-            }
-        }
-
-        stage('Generate HTML Report') {
-            steps {
-                echo 'Generating HTML report...'
-                publishHTML(target: [
-                    reportDir: 'target/site',
-                    reportFiles: 'index.html',
-                    reportName: 'Maven HTML Report',
-                    keepAll: true,
-                    alwaysLinkToLastBuild: true,
-                    allowMissing: true
-                ])
-            }
-        }
-
-        stage('Archive Artifacts') {
-            steps {
-                echo 'Archiving build artifacts...'
-                archiveArtifacts artifacts: '**/target/*.jar', fingerprint: true
+                echo 'Publishing JUnit test report...'
+                junit allowEmptyResults: true,
+                      testResults: 'target/surefire-reports/*.xml'
             }
         }
     }
@@ -79,7 +55,7 @@ pipeline {
             echo ' Build failed'
         }
         always {
-            echo ' Cleaning workspace'
+            echo 'Cleaning workspace'
             cleanWs()
         }
     }
